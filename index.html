@@ -1,0 +1,570 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>field buddy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body{background:#f4f4f4;transition:0.3s;}
+body.dark{background:#1e1e1e;color:white;}
+
+.timer{font-size:48px;font-weight:bold;}
+
+.menu{
+position:fixed;
+top:0;
+left:-250px;
+width:250px;
+height:100%;
+background:white;
+padding:20px;
+transition:0.3s;
+box-shadow:2px 0 10px rgba(0,0,0,0.2);
+z-index:10;
+}
+
+body.dark .menu{background:#2b2b2b;}
+
+.menuBtn{
+position:fixed;
+top:10px;
+left:10px;
+font-size:26px;
+background:none;
+border:none;
+}
+
+.timesWindow{
+display:none;
+position:fixed;
+top:8%;
+left:50%;
+transform:translateX(-50%);
+width:360px;
+max-height:450px;
+overflow:auto;
+background:white;
+padding:20px;
+border-radius:10px;
+z-index:20;
+}
+
+body.dark .timesWindow{background:#2b2b2b;}
+
+.timeItem{display:flex;justify-content:space-between;margin-bottom:10px;}
+
+.houseCard{
+border:1px solid #ddd;
+border-radius:8px;
+padding:10px;
+margin-bottom:10px;
+}
+
+#map{
+height:200px;
+width:100%;
+border-radius:8px;
+margin-bottom:10px;
+}
+
+.welcome{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:white;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:100;
+}
+
+body.dark .welcome{background:#1e1e1e;}
+</style>
+</head>
+
+<body>
+
+<!-- MENU -->
+<div id="menu" class="menu">
+
+<h4>field buddy</h4>
+
+<button class="btn btn-outline-secondary w-100 mb-3" onclick="toggleMenu()">Close Menu</button>
+
+<button class="btn btn-info w-100 mb-2" onclick="openHouse()">Add Householder</button>
+
+<button class="btn btn-warning w-100 mb-2" onclick="openHouseList()">View Householders</button>
+
+<button class="btn btn-primary w-100 mb-2" onclick="showManual()">Add Time</button>
+
+<button class="btn btn-secondary w-100 mb-2" onclick="openTimes()">View Times</button>
+
+<button class="btn btn-dark w-100" onclick="openSettings()">Settings</button>
+
+</div>
+
+<button class="menuBtn" onclick="toggleMenu()">☰</button>
+
+<!-- MAIN -->
+<div class="container text-center mt-5">
+
+<h1 class="mb-4">field buddy</h1>
+
+<div id="time" class="timer mb-4">0 sec</div>
+
+<button class="btn btn-success me-2" onclick="startTimer()">Start</button>
+<button class="btn btn-primary" onclick="saveTimer()">Save</button>
+
+<div class="card mt-5 mx-auto" style="max-width:400px">
+
+<div class="card-body">
+
+<h5>Monthly Score</h5>
+
+<select id="monthSelect" class="form-select"></select>
+
+<br>
+
+<input id="goalInput" class="form-control" placeholder="Goal hours">
+
+<br>
+
+<button class="btn btn-success w-100" onclick="saveGoal()">Save Goal</button>
+
+<p class="mt-3" id="scoreResult">Score: -</p>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- ADD TIME -->
+<div id="manualBox" class="timesWindow">
+
+<h4>Add Time</h4>
+
+<input id="hours" class="form-control mb-2" placeholder="Hours">
+<input id="minutes" class="form-control mb-2" placeholder="Minutes">
+
+<button class="btn btn-success w-100 mb-2" onclick="saveManual()">Save</button>
+<button class="btn btn-secondary w-100" onclick="closeManual()">Cancel</button>
+
+</div>
+
+<!-- TIMES -->
+<div id="timesWindow" class="timesWindow">
+
+<h4>Saved Times</h4>
+
+<div id="timesList"></div>
+
+<button class="btn btn-secondary w-100 mt-3" onclick="closeTimes()">Close</button>
+
+</div>
+
+<!-- ADD HOUSEHOLDER -->
+<div id="houseBox" class="timesWindow">
+
+<h4>Add Householder</h4>
+
+<input id="hname" class="form-control mb-2" placeholder="Name">
+<input id="hphone" class="form-control mb-2" placeholder="Phone">
+
+<div id="map"></div>
+
+<button class="btn btn-primary w-100 mb-2" onclick="getMyLocation()">📍 Use My Location</button>
+
+<div id="locText">Click map to select location</div>
+
+<br>
+
+<button class="btn btn-success w-100 mb-2" onclick="saveHouse()">Save</button>
+
+<button class="btn btn-secondary w-100" onclick="closeHouse()">Close</button>
+
+</div>
+
+<!-- VIEW HOUSEHOLDERS -->
+<div id="houseListBox" class="timesWindow">
+
+<h4>Saved Householders</h4>
+
+<div id="houseList"></div>
+
+<button class="btn btn-secondary w-100 mt-3" onclick="closeHouseList()">Close</button>
+
+</div>
+
+<!-- SETTINGS -->
+<div id="settingsBox" class="timesWindow">
+
+<h4>Settings</h4>
+
+<button class="btn btn-light w-100 mb-2" onclick="setLight()">Light Theme</button>
+<button class="btn btn-dark w-100 mb-2" onclick="setDark()">Dark Theme</button>
+<button class="btn btn-secondary w-100" onclick="closeSettings()">Close</button>
+
+</div>
+
+<!-- WELCOME -->
+<div id="welcome" class="welcome">
+
+<h1>field buddy</h1>
+<p>By Alfred Sam</p>
+
+<button class="btn btn-success" onclick="closeWelcome()">Start</button>
+
+</div>
+
+<script>
+
+/* MONTHS */
+
+const months=["January","February","March","April","May","June","July","August","September","October","November","December"]
+
+let monthSelect=document.getElementById("monthSelect")
+
+months.forEach((m,i)=>{
+let opt=document.createElement("option")
+opt.value=i
+opt.textContent=m
+monthSelect.appendChild(opt)
+})
+
+monthSelect.value=new Date().getMonth()
+
+/* MENU */
+
+function toggleMenu(){
+let menu=document.getElementById("menu")
+menu.style.left = menu.style.left==="0px" ? "-250px" : "0px"
+}
+
+/* TIMER */
+
+let startTime
+let timerInterval
+let running=false
+
+function startTimer(){
+if(running) return
+running=true
+startTime=Date.now()
+
+timerInterval=setInterval(function(){
+let sec=Math.floor((Date.now()-startTime)/1000)
+time.innerText=sec+" sec"
+},1000)
+}
+
+function saveTimer(){
+
+if(!running) return
+
+clearInterval(timerInterval)
+running=false
+
+let sec=Math.floor((Date.now()-startTime)/1000)
+let minutes=Math.floor(sec/60)
+let hours=Math.floor(minutes/60)
+
+minutes=minutes%60
+
+let date=new Date().toISOString()
+
+let times=JSON.parse(localStorage.getItem("times"))||[]
+
+times.push({hours:hours,minutes:minutes,date:date})
+
+localStorage.setItem("times",JSON.stringify(times))
+
+time.innerText="0 sec"
+
+calculateScore()
+
+}
+
+/* ADD TIME */
+
+function showManual(){manualBox.style.display="block"}
+function closeManual(){manualBox.style.display="none"}
+
+function saveManual(){
+
+let h=Number(hours.value)||0
+let m=Number(minutes.value)||0
+
+let date=new Date().toISOString()
+
+let times=JSON.parse(localStorage.getItem("times"))||[]
+
+times.push({hours:h,minutes:m,date:date})
+
+localStorage.setItem("times",JSON.stringify(times))
+
+closeManual()
+
+calculateScore()
+
+}
+
+/* VIEW TIMES */
+
+function openTimes(){
+
+let times=JSON.parse(localStorage.getItem("times"))||[]
+
+timesList.innerHTML=""
+
+times.forEach((t,index)=>{
+
+let d=new Date(t.date)
+
+let div=document.createElement("div")
+
+div.className="timeItem"
+
+div.innerHTML="<span>"+d.toLocaleDateString()+" — "+t.hours+"h "+t.minutes+"m</span><button class='btn btn-danger btn-sm' onclick='deleteTime("+index+")'>Delete</button>"
+
+timesList.appendChild(div)
+
+})
+
+timesWindow.style.display="block"
+
+}
+
+function deleteTime(i){
+
+let times=JSON.parse(localStorage.getItem("times"))||[]
+
+times.splice(i,1)
+
+localStorage.setItem("times",JSON.stringify(times))
+
+openTimes()
+
+calculateScore()
+
+}
+
+function closeTimes(){timesWindow.style.display="none"}
+
+/* MAP */
+
+let map
+let marker
+let selectedLat
+let selectedLng
+
+function initMap(){
+
+map=new google.maps.Map(document.getElementById("map"),{
+center:{lat:20,lng:78},
+zoom:4
+})
+
+map.addListener("click",function(e){
+
+selectedLat=e.latLng.lat()
+selectedLng=e.latLng.lng()
+
+locText.innerText=selectedLat.toFixed(5)+", "+selectedLng.toFixed(5)
+
+if(marker) marker.setMap(null)
+
+marker=new google.maps.Marker({
+position:e.latLng,
+map:map
+})
+
+})
+
+}
+
+/* GPS */
+
+function getMyLocation(){
+
+navigator.geolocation.getCurrentPosition(function(position){
+
+let lat=position.coords.latitude
+let lng=position.coords.longitude
+
+selectedLat=lat
+selectedLng=lng
+
+locText.innerText=lat.toFixed(5)+", "+lng.toFixed(5)
+
+map.setCenter({lat:lat,lng:lng})
+map.setZoom(16)
+
+if(marker) marker.setMap(null)
+
+marker=new google.maps.Marker({
+position:{lat:lat,lng:lng},
+map:map
+})
+
+})
+
+}
+
+/* SAVE HOUSE */
+
+function saveHouse(){
+
+let name=hname.value
+let phone=hphone.value
+
+if(!name || !selectedLat){
+alert("Select location")
+return
+}
+
+let houses=JSON.parse(localStorage.getItem("houses"))||[]
+
+houses.push({
+name:name,
+phone:phone,
+lat:selectedLat,
+lng:selectedLng
+})
+
+localStorage.setItem("houses",JSON.stringify(houses))
+
+alert("Saved!")
+
+hname.value=""
+hphone.value=""
+
+}
+
+/* VIEW HOUSEHOLDERS */
+
+function openHouseList(){
+
+let houses=JSON.parse(localStorage.getItem("houses"))||[]
+
+houseList.innerHTML=""
+
+houses.forEach((h,i)=>{
+
+let mapLink="https://www.google.com/maps?q="+h.lat+","+h.lng
+
+let div=document.createElement("div")
+
+div.className="houseCard"
+
+div.innerHTML=
+"<b>"+h.name+"</b><br>"+
+"📞 "+h.phone+"<br>"+
+"<a target='_blank' href='"+mapLink+"'>Open Map</a><br>"+
+"<button class='btn btn-danger btn-sm mt-2' onclick='deleteHouse("+i+")'>Delete</button>"
+
+houseList.appendChild(div)
+
+})
+
+houseListBox.style.display="block"
+
+}
+
+function deleteHouse(i){
+
+let houses=JSON.parse(localStorage.getItem("houses"))||[]
+
+houses.splice(i,1)
+
+localStorage.setItem("houses",JSON.stringify(houses))
+
+openHouseList()
+
+}
+
+function closeHouse(){houseBox.style.display="none"}
+function closeHouseList(){houseListBox.style.display="none"}
+function openHouse(){houseBox.style.display="block"}
+
+/* THEME */
+
+function openSettings(){settingsBox.style.display="block"}
+function closeSettings(){settingsBox.style.display="none"}
+
+function setDark(){
+document.body.classList.add("dark")
+localStorage.setItem("theme","dark")
+}
+
+function setLight(){
+document.body.classList.remove("dark")
+localStorage.setItem("theme","light")
+}
+
+if(localStorage.getItem("theme")==="dark"){
+document.body.classList.add("dark")
+}
+
+/* SCORE */
+
+function saveGoal(){
+
+let month=monthSelect.value
+let goal=Number(goalInput.value)||0
+
+localStorage.setItem("goal_"+month,goal)
+
+calculateScore()
+
+}
+
+function calculateScore(){
+
+let month=monthSelect.value
+let goal=Number(localStorage.getItem("goal_"+month))||0
+
+let times=JSON.parse(localStorage.getItem("times"))||[]
+
+let totalMinutes=0
+
+times.forEach(t=>{
+
+let d=new Date(t.date)
+
+if(d.getMonth()==month){
+totalMinutes+=(t.hours*60)+(t.minutes)
+}
+
+})
+
+let totalHours=totalMinutes/60
+
+let score="BAD ❌"
+
+if(totalHours>=goal) score="GOOD ✅"
+else if(totalHours>=goal/2) score="OK ⚠"
+
+scoreResult.innerText="Total: "+totalHours.toFixed(1)+"h / Goal: "+goal+"h → "+score
+
+}
+
+monthSelect.addEventListener("change",calculateScore)
+
+function closeWelcome(){welcome.style.display="none"}
+
+calculateScore()
+
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB1TmclFrlWzBLgCl34P6KHnSPH_5GbTOk&callback=initMap" async defer></script>
+
+</body>
+</html>
+
